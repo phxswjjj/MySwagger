@@ -17,14 +17,21 @@ namespace MySwagger.Controllers
         [HttpGet]
         public IHttpActionResult MoveIn(string lotId)
         {
-            var redis = ConnectionMultiplexer.Connect("redis.local:6379");
-            var db = redis.GetDatabase();
-            var isSuccess = db.StringSet($"DISP:LOT:{lotId}", Environment.MachineName, 
-                expiry: Expired, when: When.NotExists);
-            if (isSuccess)
-                return Ok();
-            else
-                return InternalServerError();
+            try
+            {
+                var redis = ConnectionMultiplexer.Connect("redis.local:6379,connectRetry=1,connectTimeout=100");
+                var db = redis.GetDatabase();
+                var isSuccess = db.StringSet($"DISP:LOT:{lotId}", Environment.MachineName,
+                    expiry: Expired, when: When.NotExists);
+                if (isSuccess)
+                    return Ok();
+                else
+                    return InternalServerError();
+            }
+            catch (Exception ex)
+            {
+                return InternalServerError(ex);
+            }
         }
     }
 }
